@@ -92,6 +92,9 @@ dimanche) coûtent 711,45\eur{} par semaine. Un meilleur partage du rayon rappor
 44,88\eur{} par jour, et un second remplissage quotidien supprime toutes les ventes perdues
 en rayon.
 
+\textbf{Application en ligne :} \href{https://projet-ro-stocks.streamlit.app/}{\texttt{https://projet-ro-stocks.streamlit.app/}}\\
+Code et rapport : \href{https://github.com/diakhouM/projet-ro-stocks}{\texttt{github.com/diakhouM/projet-ro-stocks}}
+
 \textbf{Mots-clés :} gestion des stocks, programmation linéaire, algorithme du simplexe,
 variables d'écart, rupture, rayon, réserve, application Python.
 
@@ -526,9 +529,9 @@ un petit magasin, l'application affiche tous les tableaux du simplexe ; pour un 
 n'affiche que les résultats principaux.
 
 \textbf{Interface web.} Le fichier \texttt{app\_streamlit.py} propose la même application
-dans le navigateur (\texttt{python -m streamlit run app\_streamlit.py}). Une fois lancée,
-elle s'ouvre à l'adresse \href{http://localhost:8501/}{\texttt{http://localhost:8501/}} ; ce
-lien n'est valable que sur l'ordinateur où l'application tourne. On y choisit le cas
+dans le navigateur. Elle est en ligne à l'adresse
+\href{https://projet-ro-stocks.streamlit.app/}{\texttt{https://projet-ro-stocks.streamlit.app/}} ; pour la lancer sur son propre ordinateur, il
+suffit de taper \texttt{python -m streamlit run app\_streamlit.py}. On y choisit le cas
 (2 produits, 6 produits, un fichier CSV ou des produits aléatoires), on modifie directement
 le tableau des produits, on règle le budget, la réserve, le service minimum et le nombre de
 remplissages du rayon avec le menu de gauche, et le calcul se refait aussitôt. Les réponses

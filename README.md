@@ -2,6 +2,8 @@
 
 Sujet 3 du cours : « Problème de gestion des stocks ».
 
+**Application en ligne : https://projet-ro-stocks.streamlit.app/**
+
 Le projet répond à 3 questions avec les méthodes du cours (programmation linéaire, simplexe) :
 
 1. **Quand y a-t-il rupture ?**
