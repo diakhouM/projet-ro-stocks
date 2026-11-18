@@ -29,6 +29,8 @@ from modele import (pl_commandes, marge_totale, tableau_commandes, tableau_resso
 COLONNES_OBLIGATOIRES = ["produit", "demande_jour", "cout_achat", "prix_vente", "delai",
                          "stock_securite", "capacite_rayon", "volume"]
 SEUIL_AFFICHAGE_COMPLET = 15     # au-dela, on n'affiche que le resume et les premieres lignes
+PART_BUDGET = 0.85               # produits aleatoires : budget = 85 % du cout de la demande
+PART_RESERVE = 0.90              # produits aleatoires : reserve = 90 % du volume de la demande
 
 
 # ---------------------------------------------------------------------------
@@ -67,15 +69,22 @@ def produits_aleatoires(nombre, graine=42):
     })
     produits["marge"] = produits["prix_vente"] - produits["cout_achat"]
 
-    # Budget et reserve un peu inferieurs a ce qu'il faudrait pour tout servir
+    return produits, parametres_proportionnels(produits)
+
+
+def parametres_proportionnels(produits):
+    """
+    Budget et reserve proportionnels a la taille du magasin : un peu inferieurs a ce qu'il
+    faudrait pour tout servir (85 % du cout et 90 % du volume de la demande hebdomadaire).
+    Ainsi le programme a toujours une solution, quel que soit le nombre de produits.
+    """
     demande_hebdo = d.JOURS_PAR_SEMAINE * produits["demande_jour"]
-    parametres = {
-        "budget": round(0.85 * (produits["cout_achat"] * demande_hebdo).sum()),
-        "reserve": round(0.90 * (produits["volume"] * demande_hebdo).sum()),
+    return {
+        "budget": round(PART_BUDGET * (produits["cout_achat"] * demande_hebdo).sum()),
+        "reserve": round(PART_RESERVE * (produits["volume"] * demande_hebdo).sum()),
         "service_min": d.SERVICE_MIN,
         "volume_rayon": (produits["capacite_rayon"] * produits["volume"]).sum(),
     }
-    return produits, parametres
 
 
 # ---------------------------------------------------------------------------

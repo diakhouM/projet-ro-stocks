@@ -12,7 +12,7 @@ import pandas as pd
 import streamlit as st
 
 import donnees as d
-from application import lire_produits, produits_aleatoires, repondre
+from application import lire_produits, parametres_proportionnels, produits_aleatoires, repondre
 
 SEUIL_DETAIL = 15          # jusqu'a 15 produits, on peut afficher les tableaux du simplexe
 NB_MAX_GRAPHIQUE = 30      # au-dela, les graphiques montrent seulement 30 produits
@@ -45,13 +45,13 @@ NOMS_AFFICHES = {
 # 1. Les donnees : choix du cas, tableau modifiable
 # ---------------------------------------------------------------------------
 def donnees_du_cas(cas):
-    """Renvoie les produits et les parametres par defaut du cas choisi."""
+    """Renvoie les produits, les parametres par defaut et une cle propre au cas choisi."""
     if cas == CAS[0]:
-        return d.PRODUITS_2, dict(d.PARAMETRES_2_PRODUITS)
+        return d.PRODUITS_2, dict(d.PARAMETRES_2_PRODUITS), "deux"
     if cas == CAS[1]:
         parametres = {"budget": d.BUDGET_HEBDO, "reserve": d.CAPACITE_RESERVE,
                       "service_min": d.SERVICE_MIN, "volume_rayon": d.VOLUME_RAYON}
-        return d.PRODUITS, parametres
+        return d.PRODUITS, parametres, "six"
     if cas == CAS[2]:
         fichier = st.sidebar.file_uploader("Fichier CSV (séparateur ;)", type="csv")
         if fichier is None:
@@ -61,9 +61,10 @@ def donnees_du_cas(cas):
         produits = lire_produits(fichier)
         parametres = {"budget": d.BUDGET_HEBDO, "reserve": d.CAPACITE_RESERVE,
                       "service_min": d.SERVICE_MIN, "volume_rayon": 0}
-        return produits, parametres
+        return produits, parametres, "csv"
     nombre = st.sidebar.slider("Nombre de produits", 10, 1000, 100, step=10)
-    return produits_aleatoires(nombre)
+    produits, parametres = produits_aleatoires(nombre)
+    return produits, parametres, f"aleatoire_{nombre}"
 
 
 def preparer_produits(produits):
@@ -81,10 +82,13 @@ def preparer_produits(produits):
     return produits
 
 
-def parametres_lateraux(cas, produits, defauts):
-    """Zone de gauche : budget, reserve, service minimum, rayon, remplissages."""
+def parametres_lateraux(cle, produits, defauts):
+    """
+    Zone de gauche : budget, reserve, service minimum, rayon, remplissages.
+    La cle change avec le cas (et, au hasard, avec la taille du magasin) : Streamlit
+    reprend alors les valeurs par defaut au lieu de garder celles du cas precedent.
+    """
     st.sidebar.header("Paramètres")
-    cle = cas[:10]                           # une cle par cas, pour reinitialiser les valeurs
     budget = st.sidebar.number_input("Budget par semaine (€)", min_value=0.0,
                                      value=float(defauts["budget"]), step=100.0,
                                      key=f"budget_{cle}")
@@ -213,21 +217,27 @@ def main():
                "Calcul par l'algorithme du simplexe.")
 
     cas = st.sidebar.selectbox("Cas étudié", CAS)
-    produits, defauts = donnees_du_cas(cas)
+    produits, defauts, cle = donnees_du_cas(cas)
 
     st.subheader("Les produits")
     if len(produits) <= 30:
         st.caption("Vous pouvez modifier les valeurs ou ajouter des lignes.")
         saisie = st.data_editor(produits[COLONNES_SAISIE], num_rows="dynamic",
-                                hide_index=True, width="stretch", key=f"produits_{cas[:10]}")
+                                hide_index=True, width="stretch", key=f"produits_{cle}")
     else:
         st.caption(f"{len(produits)} produits (tableau en lecture seule).")
         saisie = produits[COLONNES_SAISIE]
         st.dataframe(saisie, hide_index=True, width="stretch", height=250)
     produits = preparer_produits(saisie)
 
+    if cas == CAS[3]:
+        # Produits au hasard : budget et reserve suivent la taille (et les modifications)
+        # du magasin, pour que le programme ait toujours une solution.
+        defauts = parametres_proportionnels(produits)
+        cle = f"{cle}_{defauts['budget']}_{defauts['reserve']}"
+
     budget, reserve, service_min, volume_rayon, remplissages = \
-        parametres_lateraux(cas, produits, defauts)
+        parametres_lateraux(cle, produits, defauts)
 
     try:
         reponses = repondre(produits, budget, reserve, service_min, volume_rayon,

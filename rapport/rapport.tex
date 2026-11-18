@@ -9,6 +9,7 @@
 \usepackage{booktabs,array}
 \usepackage{graphicx}
 \usepackage{float}
+\usepackage{multicol}
 \usepackage{needspace}
 \usepackage[font=small,labelfont=bf]{caption}
 \usepackage{xcolor}
@@ -63,8 +64,8 @@ comment répartir le stock entre le rayon et la réserve ?\par}
 \vspace{0.5cm}
 \rule{\linewidth}{1pt}\par
 \vspace{1.2cm}
-{\large Programmation linéaire et algorithme du simplexe :\\
-un cas résolu à la main, puis une application Python\par}
+{\large Une démarche expliquée pas à pas :\\
+programmation linéaire, algorithme du simplexe et application Python\par}
 \vspace{3cm}
 {\Large Diakhou Mbengue\par}
 \vfill
@@ -73,29 +74,30 @@ un cas résolu à la main, puis une application Python\par}
 
 % ------------------------------------------------------------------ resume
 \section*{Résumé}
-Ce dossier étudie la gestion des stocks d'un supermarché et répond à trois questions :
-quand y a-t-il rupture, quand et combien commander, comment répartir le stock entre le rayon
-et la réserve. Il utilise les méthodes du cours : programmation linéaire, méthode graphique,
-méthode des sommets et algorithme du simplexe.
+Ce dossier étudie la gestion des stocks d'un supermarché et cherche à répondre à trois
+questions que se pose tout responsable de magasin : quand y a-t-il rupture, quand et combien
+commander, et comment répartir le stock entre le rayon et la réserve. Nous y répondons avec
+les méthodes du cours, c'est-à-dire la programmation linéaire, la méthode graphique, la
+méthode des sommets et surtout l'algorithme du simplexe.
 
-La démarche se fait en deux temps. Dans la partie 2, les trois questions sont traitées
-\textbf{entièrement à la main sur un magasin de deux produits}, ce qui permet de voir chaque
-étape : le programme linéaire, la méthode graphique, les trois tableaux du simplexe, puis la
-lecture des ruptures, du calendrier de commande et du partage du rayon. Dans la partie 3, la
-même démarche est programmée en Python pour obtenir une \textbf{application} qui accepte un
-nombre quelconque de produits : elle est vérifiée sur le cas à deux produits, appliquée aux
-six produits d'un Super U, puis testée jusqu'à 1\,000 produits.
+La démarche se déroule en deux temps. Nous traitons d'abord un magasin de deux produits
+entièrement à la main, en expliquant chaque étape et le sens de chaque nombre, puis nous
+programmons la même démarche en Python afin d'obtenir une application capable de traiter un
+nombre quelconque de produits. Cette application est vérifiée sur le cas à deux produits,
+appliquée aux six produits d'un Super U, puis testée jusqu'à 1\,000 produits.
 
-Sur le cas à six produits, la marge maximale est de 5\,630,55\eur{} par semaine, avec un
-budget entièrement dépensé. Les ruptures (lait et yaourts à partir du vendredi soir, eau le
-dimanche) coûtent 711,45\eur{} par semaine. Un meilleur partage du rayon rapporte
-44,88\eur{} par jour, et un second remplissage quotidien supprime toutes les ventes perdues
-en rayon.
+Sur le cas du Super U, la marge maximale atteint 5\,630,55\eur{} par semaine, le budget étant
+entièrement dépensé. Les ruptures, qui touchent le lait et les yaourts à partir du vendredi
+soir et l'eau le dimanche, coûtent 711,45\eur{} par semaine, tandis qu'un meilleur partage du
+rayon rapporte 44,88\eur{} par jour et qu'un second remplissage quotidien supprime toutes les
+ventes perdues en rayon. Nous avons choisi d'expliquer non seulement les calculs mais aussi
+le raisonnement qui les sous-tend, et d'énoncer clairement les limites de notre modèle, en
+proposant pour chacune une piste pour la dépasser.
 
-\textbf{Application en ligne :} \href{https://projet-ro-stocks.streamlit.app/}{\texttt{https://projet-ro-stocks.streamlit.app/}}\\
+Application en ligne : \href{https://projet-ro-stocks.streamlit.app/}{\texttt{https://projet-ro-stocks.streamlit.app/}}\\
 Code et rapport : \href{https://github.com/diakhouM/projet-ro-stocks}{\texttt{github.com/diakhouM/projet-ro-stocks}}
 
-\textbf{Mots-clés :} gestion des stocks, programmation linéaire, algorithme du simplexe,
+Mots-clés : gestion des stocks, programmation linéaire, algorithme du simplexe,
 variables d'écart, rupture, rayon, réserve, application Python.
 
 \subsection*{Les chiffres clés}
@@ -112,46 +114,59 @@ Marge par jour, rayon actuel $\to$ rayon optimal & 120 $\to$ 130\eur & 806 $\to$
 \end{tabular}
 \end{center}
 
-\newpage
-{\setlength{\parskip}{0pt}\small\tableofcontents}
+\begingroup\makeatletter\setlength{\parskip}{0pt}\footnotesize
+\subsection*{Table des matières}
+\begin{multicols}{2}\@starttoc{toc}\end{multicols}
+\endgroup
 \newpage
 
 % ------------------------------------------------------------------ 1
 \section{Introduction}
 
-\subsection{Contexte et problématique}
-Dans la grande distribution, le stock est à la fois une nécessité et un coût. S'il est trop
-faible, le rayon est vide, la vente est perdue et le client peut changer d'enseigne. S'il est
-trop élevé, il immobilise de la trésorerie et occupe une réserve dont la surface est
-limitée. Le responsable d'un magasin doit donc répartir des ressources rares, l'argent et la
-place, entre des produits qui n'ont ni le même coût, ni le même volume, ni la même marge.
+\subsection{Le problème de départ}
+Dans un supermarché, le stock est à la fois indispensable et coûteux. S'il est trop faible,
+le rayon se vide, la vente est perdue et le client peut partir chez un concurrent ; s'il est
+trop élevé, il immobilise de l'argent et occupe une réserve dont la place est limitée. Le
+responsable du magasin doit donc faire des choix : il dispose de ressources limitées (un
+budget, une réserve, un rayon) qu'il lui faut répartir entre des produits qui n'ont ni le
+même coût, ni le même volume, ni la même marge.
 
-La recherche opérationnelle regroupe les méthodes qui aident à prendre ce type de décision :
-modéliser un problème, puis chercher la meilleure solution avec un algorithme. La
-programmation linéaire consiste à maximiser une fonction économique linéaire sous des
-contraintes linéaires : c'est exactement la forme du problème du magasin. Ce dossier pose
-trois questions :
-\begin{enumerate}
-\item \textbf{Quand y a-t-il rupture ?}
-\item \textbf{Quand et combien commander ?}
-\item \textbf{Comment répartir le stock entre le rayon et la réserve ?}
-\end{enumerate}
+La recherche opérationnelle regroupe les méthodes qui aident à prendre ce type de décision,
+en modélisant le problème puis en cherchant la meilleure solution à l'aide d'un algorithme.
+Parmi elles, la programmation linéaire consiste à maximiser une fonction économique linéaire
+sous des contraintes linéaires, ce qui correspond exactement à la forme du problème du
+magasin, où l'on cherche à gagner le plus possible tout en respectant des limites de budget,
+de place et de demande.
 
-\subsection{Démarche : d'abord à la main, ensuite par une application}
-Une solution calculée par un programme n'a de valeur que si l'on comprend ce que le
-programme fait. Le dossier procède donc en deux temps.
+\subsection{Nos trois questions}
+Nous cherchons à répondre à trois questions : quand y a-t-il rupture, quand et combien
+commander, et comment répartir le stock entre le rayon et la réserve. La première concerne
+les ruptures, c'est-à-dire les moments où le magasin se trouve à court d'un produit ; la
+deuxième porte sur l'approvisionnement, à la fois dans le temps et en quantité ; la troisième
+touche à l'organisation de l'espace, puisque le client ne se sert que dans le rayon alors que
+la marchandise est entreposée dans la réserve.
 
-\begin{itemize}
-\item \textbf{Partie 2 : un magasin de deux produits, résolu à la main.} Avec deux produits,
-  les tableaux du simplexe tiennent sur une page et la méthode graphique se dessine. Les
-  trois questions y sont traitées l'une après l'autre.
-\item \textbf{Partie 3 : une application Python pour un nombre quelconque de produits.} La
-  même démarche est programmée. L'application est d'abord vérifiée sur le cas à deux
-  produits, puis appliquée aux six produits d'un Super U (hypothèses imaginaires), puis
-  testée sur 10, 100, 300 et 1\,000 produits.
-\end{itemize}
+\subsection{Pourquoi la programmation linéaire et le simplexe}
+Nous avons choisi de centrer ce dossier sur l'algorithme du simplexe plutôt que de survoler
+plusieurs méthodes, car nous préférons en maîtriser une en profondeur, l'expliquer
+entièrement et la programmer nous-mêmes. Avec deux produits, un graphique suffirait à trouver
+la solution, et nous l'utiliserons d'ailleurs pour contrôler nos résultats ; mais un vrai
+magasin compte des milliers de produits, et seul un algorithme tel que le simplexe peut alors
+répondre.
 
-\begin{table}[H]
+L'idée du simplexe est intuitive : on part d'une situation où l'on ne commande rien, puis on
+améliore la marge pas à pas, en ne changeant qu'une décision à la fois, jusqu'à ce qu'aucun
+changement n'améliore plus la marge, auquel cas la meilleure solution est atteinte.
+
+\subsection{Notre démarche}
+Une solution calculée par un programme n'a de valeur que si l'on comprend ce qu'il fait, et
+c'est pourquoi nous procédons en deux temps. La partie 2 traite un magasin de deux produits
+entièrement à la main, en détaillant chaque étape, tandis que la partie 3 présente une
+application Python, vérifiée sur ce même cas à deux produits, puis appliquée à un Super U de
+six produits et testée jusqu'à 1\,000 produits. Le tableau~\ref{tab:demarche} indique, pour
+chaque question, la méthode du cours qui y répond.
+
+\begin{table}[!htbp]
 \centering\small
 \caption{Les questions du dossier et les méthodes du cours utilisées}\label{tab:demarche}
 \begin{tabular}{@{}p{4.3cm}p{7.2cm}l@{}}
@@ -168,15 +183,13 @@ Rayon ou réserve ? & Programme linéaire « rayon », résolu de la même faço
 \end{table}
 
 % ------------------------------------------------------------------ 2
-\newpage
-\section{Le cas manuel : un magasin de deux produits}
+\section{Le cas à deux produits, résolu à la main}
 
-\subsection{Les données}
-Un petit magasin vend deux produits, A et B. Les chiffres sont choisis pour que les calculs
-tombent juste. Le magasin est livré le lundi matin et le rayon est rempli une fois par jour,
-le matin.
+\subsection{Les données et les hypothèses}
+Un petit magasin vend deux produits, A et B, dont les chiffres ont été choisis pour que les
+calculs tombent juste ; le tableau~\ref{tab:donnees2} les rassemble.
 
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering\small
 \caption{Données du magasin à deux produits}\label{tab:donnees2}
 \begin{tabular}{@{}lrr@{}}
@@ -187,7 +200,7 @@ Demande par jour & 20 & 20 \\
 Demande par semaine $H_i = 7\,d_i$ & 140 & 140 \\
 Coût d'achat $c_i$ & 2\eur & 4\eur \\
 Prix de vente $p_i$ & 5\eur & 9\eur \\
-Marge $m_i = p_i - c_i$ & 3\eur & 5\eur \\
+Marge par unité $m_i = p_i - c_i$ & 3\eur & 5\eur \\
 Volume $v_i$ & 1 litre & 1 litre \\
 Délai de livraison $L_i$ & 2 jours & 3 jours \\
 Stock de sécurité $SS_i$ & 20 & 20 \\
@@ -196,64 +209,106 @@ Places actuelles en rayon & 15 & 15 \\
 \end{tabular}
 \end{table}
 
-Ressources du magasin : \textbf{budget de 400\eur{} par semaine}, \textbf{réserve de
-150 litres}, \textbf{rayon de 30 litres} (les 15 + 15 places actuelles).
+Le magasin dispose d'un budget de 400\eur{} par semaine, d'une réserve de 150 litres et d'un
+rayon de 30 litres, soit les 15 places de A et les 15 places de B, chaque unité occupant un
+litre. Ces données reposent sur plusieurs hypothèses que nous rendons explicites dès le
+départ. Nous supposons d'abord que la demande est connue à l'avance, puisque 20 clients
+achètent chaque produit tous les jours, alors que, dans un vrai magasin, on l'estimerait à
+partir de l'historique des ventes. Nous supposons ensuite que les délais de livraison sont
+fixes, le fournisseur mettant 2 jours pour livrer A et 3 jours pour livrer B sans jamais
+prendre de retard, qu'une seule livraison a lieu par semaine, le lundi matin, et que le rayon
+est rempli une fois par jour, le matin.
 
-Servir toute la demande coûterait $2 \times 140 + 4 \times 140 = 840\eur$ et occuperait
-280 litres : c'est plus que le budget et la réserve. Le magasin ne peut donc pas tout
-commander, et il faut choisir quoi commander en priorité.
+Ces hypothèses posées, une première observation s'impose : servir toute la demande coûterait
+$2 \times 140 + 4 \times 140 = 840\eur$ et occuperait 280 litres, alors que le magasin ne
+dispose que de 400\eur{} et de 150 litres. Il ne peut donc pas tout commander et doit décider
+quoi commander en priorité, et c'est précisément ce choix que la programmation linéaire va
+rendre optimal.
 
-\subsection{Combien commander ?}
-
-\subsubsection*{Le programme linéaire}
-On note $a$ et $b$ les quantités de A et de B commandées pour la semaine.
+\subsection{Écrire le problème sous forme de programme linéaire}
+Pour écrire le problème, nous notons $a$ la quantité de A commandée pour la semaine et $b$
+celle de B, ces deux nombres constituant les décisions à prendre. L'objectif est de gagner le
+plus d'argent possible : chaque unité de A rapporte 3\eur{} et chaque unité de B 5\eur{}, de
+sorte que la marge de la semaine s'écrit $Z = 3a + 5b$, que nous cherchons à maximiser.
+Cette décision est toutefois encadrée par plusieurs limites. Le budget d'abord : A coûte
+2\eur{} et B 4\eur, et l'on ne peut pas dépenser plus de 400\eur, d'où $2a + 4b \le 400$. La
+réserve ensuite : chaque unité occupe un litre et la réserve en compte 150, d'où
+$a + b \le 150$. La demande enfin : il est inutile de commander plus que ce que les clients
+achèteront, si bien que $a \le 140$ et $b \le 140$ (précisons que ce n'est pas la demande qui
+varie, puisqu'elle vaut 140, mais la quantité commandée qui doit lui rester inférieure ou
+égale). À ces contraintes s'ajoute la positivité, car on ne peut pas commander une quantité
+négative : $a \ge 0$ et $b \ge 0$. Le programme complet s'écrit donc :
 \begin{align*}
 \max\; Z &= 3a + 5b && \text{(fonction économique : marge de la semaine)}\\
 \text{SC :}\quad 2a + 4b &\le 400 && \text{(budget)}\\
 a + b &\le 150 && \text{(réserve)}\\
-a \le 140,\quad b &\le 140 && \text{(plafonds : on ne vend pas plus que la demande)}\\
+a \le 140,\quad b &\le 140 && \text{(plafonds : demande de la semaine)}\\
 a,\; b &\ge 0
 \end{align*}
 
-\subsubsection*{Méthode graphique et méthode des sommets}
-\begin{figure}[H]
+\subsection{Une première résolution : la méthode graphique}
+Avec deux produits, on peut dessiner le problème : chaque contrainte est une droite, et
+l'ensemble des commandes possibles forme un polygone, appelé programme admissible, que montre
+la figure~\ref{fig:graphique}. On déplace la droite $Z = 3a + 5b$ parallèlement à elle-même,
+le plus loin possible de l'origine, et elle quitte le polygone au point $(100 ; 50)$. La
+solution optimale se trouvant toujours sur l'un des sommets de ce polygone, il suffit en fait
+de calculer la marge en chacun d'eux, ce que fait le tableau~\ref{tab:sommets}.
+
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.62\linewidth]{methode_graphique.pdf}
+\includegraphics[width=0.5\linewidth]{methode_graphique.pdf}
 \caption{Méthode graphique : programme admissible et optimum}\label{fig:graphique}
 \end{figure}
 
-Le programme admissible est le polygone grisé de la figure~\ref{fig:graphique}. On déplace
-la droite $Z = 3a + 5b$ parallèlement à elle-même, le plus loin possible de l'origine : elle
-quitte le programme admissible au point $(100 ; 50)$. La méthode des sommets confirme ce
-résultat, car la solution optimale est en l'un des sommets du programme admissible :
-
-\begin{center}\small
+\begin{table}[!htbp]
+\centering\small
+\caption{Méthode des sommets : marge $Z$ en chaque sommet du programme admissible}\label{tab:sommets}
 \begin{tabular}{@{}lccccc@{}}
 \toprule
 Sommet & $O(0 ; 0)$ & $A(140 ; 0)$ & $B(140 ; 10)$ & $C(100 ; 50)$ & $D(0 ; 100)$ \\
 \midrule
-Valeur de $Z$ & 0 & 420 & 470 & \textbf{550} & 500 \\
+Valeur de $Z$ & 0\eur & 420\eur & 470\eur & \textbf{550\eur} & 500\eur \\
 \bottomrule
 \end{tabular}
-\end{center}
+\end{table}
 
-Le sommet $C$ est à l'intersection du budget et de la réserve : $a + b = 150$ et
-$2a + 4b = 400$ donnent $b = 50$ et $a = 100$. Solution optimale :
-$(Z^{*} ; a^{*} ; b^{*}) = (550 ; 100 ; 50)$.
+Le meilleur sommet est $C(100 ; 50)$ : il faut commander 100 unités de A et 50 unités de B,
+pour une marge de 550\eur{} par semaine. Ce point se trouve à l'intersection du budget et de
+la réserve, puisque $a + b = 150$ et $2a + 4b = 400$ donnent $b = 50$ et $a = 100$, de sorte
+que les deux ressources sont entièrement utilisées. Cette méthode fonctionne très bien avec
+deux produits, mais elle devient impossible dès trois produits, car on ne peut plus dessiner ;
+c'est pourquoi nous passons maintenant au simplexe, qui donne la même réponse par le calcul et
+fonctionne quel que soit le nombre de produits.
 
-\subsubsection*{Algorithme du simplexe}
-On intègre les variables d'écart $e_1$ (budget non dépensé), $e_2$ (litres libres en
-réserve), $e_3$ et $e_4$ (demande de A et de B non servie). La solution réalisable de base
-initiale, où l'on ne commande rien, est
-$S_0 = (Z ; a ; b ; e_1 ; e_2 ; e_3 ; e_4) = (0 ; 0 ; 0 ; 400 ; 150 ; 140 ; 140)$. À chaque
-étape, la variable entrante est celle dont le profit marginal $\Delta_j$ est le plus grand,
-et la variable sortante celle dont le rapport $b_i / a_{ij}$ est le plus petit
-(uniquement pour les $a_{ij}$ strictement positifs).
+\subsection{La résolution par l'algorithme du simplexe}
+Le simplexe est une méthode d'améliorations successives : on part de la situation où l'on ne
+commande rien, puis on modifie une décision à la fois pour augmenter la marge, et l'on s'arrête
+quand plus aucun changement ne l'améliore. Comme il ne manipule que des égalités, il faut
+d'abord transformer chaque contrainte « inférieure ou égale » en égalité, en lui ajoutant une
+variable d'écart qui mesure ce qui reste : $e_1$ est le budget non dépensé, avec
+$2a + 4b + e_1 = 400$ ; $e_2$ les litres libres dans la réserve, avec $a + b + e_2 = 150$ ;
+$e_3$ et $e_4$ la demande de A et de B non servie, avec $a + e_3 = 140$ et $b + e_4 = 140$. Si
+l'on dépense par exemple 300\eur, l'écart $e_1$ vaut 100\eur. Ces écarts ne sont donc pas un
+simple artifice de calcul : ils ont un sens concret pour le magasin, et c'est grâce à eux que
+nous répondrons plus loin à la question de la rupture.
 
-{\footnotesize
-\Needspace{9\baselineskip}
-\textbf{Tableau 1} : $b$ entre ($\Delta = 5$), $e_1$ sort (rapport 100), le pivot est 4.
-\begin{center}
+Au départ, nous ne commandons rien ($a = 0$ et $b = 0$), de sorte que les écarts prennent
+toute la place : il reste 400\eur, 150 litres et 140 clients non servis pour chaque produit,
+et la marge vaut 0\eur. Cette situation initiale, que nous notons
+$S_0 = (Z ; a ; b ; e_1 ; e_2 ; e_3 ; e_4) = (0 ; 0 ; 0 ; 400 ; 150 ; 140 ; 140)$, est celle du
+tableau~\ref{tab:s1}. Pour l'améliorer, nous consultons la ligne des profits marginaux
+$\Delta_j$, qui indique ce que rapporte une unité de plus de chaque produit, soit 3\eur{} pour
+A et 5\eur{} pour B, et nous retenons le plus grand : $b$ entre dans la base. Reste à savoir
+jusqu'où l'on peut commander du B, ce que l'on détermine en calculant, pour chaque contrainte,
+le rapport entre ce qui reste et ce que consomme une unité de B. Le budget autorise
+$400 / 4 = 100$ unités, la réserve $150 / 1 = 150$ et la demande 140, tandis que la contrainte
+sur A, qui ne dépend pas de $b$, n'impose aucune limite. Le plus petit rapport, 100,
+correspond à la première limite atteinte : c'est le budget qui bloque, la variable $e_1$ sort
+de la base et le pivot vaut 4.
+
+\begin{table}[!htbp]
+\centering\footnotesize
+\caption{Tableau initial : $b$ entre ($\Delta = 5$), $e_1$ sort (rapport 100), le pivot est 4}\label{tab:s1}
 \begin{tabular}{@{}cc|rrrrrr|r|r@{}}
 \toprule
 $c_B$ & Base & $a$ & $b$ & $e_1$ & $e_2$ & $e_3$ & $e_4$ & $b_i$ & Rapport \\
@@ -266,11 +321,24 @@ $c_B$ & Base & $a$ & $b$ & $e_1$ & $e_2$ & $e_3$ & $e_4$ & $b_i$ & Rapport \\
  & $\Delta_j$ & 3 & \textbf{5} & 0 & 0 & 0 & 0 & 0 & \\
 \bottomrule
 \end{tabular}
-\end{center}
-\Needspace{9\baselineskip}
-\textbf{Tableau 2} : $S_1 = (500 ; 0 ; 100 ; 0 ; 50 ; 140 ; 40)$ ; $a$ entre
-($\Delta = 0{,}5$), $e_2$ sort (rapport 100), le pivot est 0,5.
-\begin{center}
+\end{table}
+
+Après ce premier pivot, nous commandons 100 unités de B pour une marge de 500\eur ; il ne
+reste plus de budget, 50 litres sont encore libres et 40 clients de B ne sont pas servis. La
+question se pose alors de savoir si l'on peut faire mieux, et le tableau~\ref{tab:s2} répond
+par l'affirmative : le profit marginal de A vaut désormais 0,5, ce qui est positif, de sorte
+qu'ajouter du A améliore encore la marge. Ce 0,5 s'explique simplement : le budget étant
+épuisé, ajouter une unité de A (2\eur) oblige à retirer une demi-unité de B (la moitié de
+4\eur), si bien que l'on gagne 3\eur{} et que l'on en perd 2,5, soit un gain net de 0,5\eur.
+Il reste à déterminer jusqu'où poursuivre cet échange. Chaque échange, c'est-à-dire un A en
+plus et un demi B en moins, occupe un demi-litre de plus dans la réserve ; avec 50 litres
+libres, on peut donc en faire 100, et c'est cette fois la réserve qui bloque : $e_2$ sort de
+la base et le pivot vaut 0,5. La ligne de $e_4$, dont le coefficient est négatif ($-0{,}5$),
+n'impose aucune limite, puisque retirer du B libère de la demande de B.
+
+\begin{table}[!htbp]
+\centering\footnotesize
+\caption{Deuxième tableau : $S_1 = (500 ; 0 ; 100 ; 0 ; 50 ; 140 ; 40)$ ; $a$ entre ($\Delta = 0{,}5$), $e_2$ sort (rapport 100), le pivot est 0,5}\label{tab:s2}
 \begin{tabular}{@{}cc|rrrrrr|r|r@{}}
 \toprule
 $c_B$ & Base & $a$ & $b$ & $e_1$ & $e_2$ & $e_3$ & $e_4$ & $b_i$ & Rapport \\
@@ -283,10 +351,18 @@ $c_B$ & Base & $a$ & $b$ & $e_1$ & $e_2$ & $e_3$ & $e_4$ & $b_i$ & Rapport \\
  & $\Delta_j$ & \textbf{0,5} & 0 & $-1{,}25$ & 0 & 0 & 0 & $-500$ & \\
 \bottomrule
 \end{tabular}
-\end{center}
-\Needspace{9\baselineskip}
-\textbf{Tableau 3} : tous les $\Delta_j$ sont négatifs ou nuls, la solution est optimale.
-\begin{center}
+\end{table}
+
+Le troisième tableau (tableau~\ref{tab:s3}) décrit la situation finale : nous commandons 100 A
+et 50 B pour une marge de 550\eur, et tous les profits marginaux y sont négatifs ou nuls
+($-1$ pour $e_1$ comme pour $e_2$). Plus aucun changement n'améliore la marge, la solution
+$S^{*} = (550 ; 100 ; 50 ; 0 ; 0 ; 40 ; 90)$ est donc optimale, et elle coïncide avec celle des
+deux méthodes précédentes ; comme les profits marginaux des variables hors base ($e_1$ et
+$e_2$) sont non nuls, elle est de surcroît unique.
+
+\begin{table}[!htbp]
+\centering\footnotesize
+\caption{Tableau final : tous les $\Delta_j$ sont négatifs ou nuls, la solution est optimale}\label{tab:s3}
 \begin{tabular}{@{}cc|rrrrrr|r@{}}
 \toprule
 $c_B$ & Base & $a$ & $b$ & $e_1$ & $e_2$ & $e_3$ & $e_4$ & $b_i$ \\
@@ -299,88 +375,116 @@ $c_B$ & Base & $a$ & $b$ & $e_1$ & $e_2$ & $e_3$ & $e_4$ & $b_i$ \\
  & $\Delta_j$ & 0 & 0 & $-1$ & $-1$ & 0 & 0 & $-550$ \\
 \bottomrule
 \end{tabular}
-\end{center}
-}
+\end{table}
 
-La solution optimale est $S^{*} = (550 ; 100 ; 50 ; 0 ; 0 ; 40 ; 90)$, identique à celle des
-deux méthodes précédentes : \textbf{il faut commander 100 unités de A et 50 unités de B},
-pour une marge de 550\eur{} par semaine. Le budget et la réserve sont saturés
-($e_1 = e_2 = 0$). Comme les profits marginaux des variables hors base ($e_1$ et $e_2$) sont
-non nuls, la solution est unique.
+Le tableau final appelle une remarque de lecture, car il y figure des nombres négatifs alors
+qu'une quantité commandée ne l'est jamais. Il faut en effet distinguer la valeur d'une
+variable, lue dans la colonne $b_i$ et toujours positive ou nulle, des nombres situés à
+l'intérieur du tableau, qui sont des coefficients indiquant comment les variables évoluent si
+l'on modifie une ressource. Dans la colonne de $e_1$, par exemple, le 0,5 de la ligne de $b$
+et le $-0{,}5$ de la ligne de $a$ signifient que garder 1\eur{} de côté ferait perdre un demi B
+et gagner un demi A, soit une perte de 1\eur{} de marge, ce que traduit le $\Delta$ de $-1$.
+
+On pourrait enfin s'étonner que le simplexe ne se contente pas de commander le produit le plus
+rentable. B rapporte pourtant davantage par unité (5\eur{} contre 3\eur), mais A rapporte plus
+par euro dépensé (1,50\eur{} contre 1,25\eur), si bien qu'avec un budget limité A est
+intéressant ; à l'inverse, par litre de réserve, B est meilleur (5\eur{} contre 3\eur). Le
+mélange optimal $(100 ; 50)$ est celui qui épuise les deux ressources à la fois, et le
+critère de choix dépend donc de la ressource qui bloque. Un test de sensibilité montre
+d'ailleurs combien la décision dépend des prix : si A se vendait 15\eur{} au lieu de 5\eur, sa
+marge passerait à 13\eur{} et il deviendrait meilleur sur tous les critères, de sorte que le
+simplexe commanderait alors 140 A (toute la demande) et seulement 10 B, pour une marge de
+1\,870\eur, et que, si la demande de A dépassait 150, B pourrait même disparaître
+complètement. Ce constat justifie le service minimum que nous introduirons dans la partie 3.
 
 \subsection{Quand y a-t-il rupture ?}
-Les variables d'écart $e_3 = 40$ et $e_4 = 90$ du tableau final donnent la réponse : ce sont
-les quantités de la demande hebdomadaire qui ne seront pas servies. Il y a rupture dès que le
-stock commandé est épuisé. Avec une demande de 20 par jour, la commande tient
-$x_i^{*} / d_i$ jours :
+La rupture se lit directement dans les écarts : dans le tableau final, $e_3 = 40$ et
+$e_4 = 90$ représentent les quantités de la demande hebdomadaire qui ne seront pas servies.
+Pour savoir quand elle survient, il suffit de diviser la quantité commandée par la demande
+quotidienne :
 \[
 \text{produit A : } \frac{100}{20} = 5 \text{ jours},
 \qquad
 \text{produit B : } \frac{50}{20} = 2{,}5 \text{ jours}.
 \]
-La livraison arrivant le lundi matin, le produit A est servi du lundi au vendredi et manque
-\textbf{à partir du samedi}. Le produit B manque \textbf{à partir du mercredi}.
+La livraison arrivant le lundi matin, la commande de A tient donc jusqu'au vendredi et A manque
+à partir du samedi, tandis que B manque à partir du mercredi, ce qui représente une marge
+perdue de $40 \times 3 + 90 \times 5 = 570\eur$ par semaine.
 
-La marge perdue est $40 \times 3 + 90 \times 5 = 120 + 450 = 570\eur$ par semaine. On le
-vérifie : servir toute la demande rapporterait $3 \times 140 + 5 \times 140 = 1\,120\eur$, et
-$1\,120 - 550 = 570$.
-
-\begin{retenir}
-\textbf{À retenir.} Ces ruptures sont le prix des ressources limitées. Le budget favorise A
-(1,5\eur{} de marge par euro dépensé, contre 1,25\eur{} pour B), tandis que la réserve favorise
-B (5\eur{} de marge par litre, contre 3\eur{} pour A). Le mélange optimal $(100 ; 50)$ est celui
-qui épuise les deux ressources à la fois ; aucun des deux produits ne peut être servi
-entièrement.
-\end{retenir}
+Il convient de souligner pourquoi maximiser la marge revient à minimiser la rupture, alors que
+nous n'avons pas posé la question « comment minimiser la rupture » mais « comment maximiser la
+marge ». Si toute la demande était servie, le magasin gagnerait 1\,120\eur, et ce total se
+partage toujours entre ce qui est gagné et ce qui est perdu à cause de la rupture : ici,
+$550 + 570 = 1\,120$. Plus la marge est grande, plus la perte due à la rupture est petite, de
+sorte que les deux objectifs sont équivalents. Cette rupture n'est d'ailleurs pas une erreur,
+puisqu'avec ce budget et cette réserve aucune commande ne peut faire mieux : le simplexe ne
+supprime pas la rupture, il choisit la rupture la moins coûteuse.
 
 \subsection{Quand commander ?}
-Le programme donne les quantités ; la date dépend du délai de livraison. Pour que la
-marchandise soit en réserve le lundi matin, il faut commander $L_i$ jours avant : le
-produit A (2 jours) se commande \textbf{le samedi} précédent, le produit B (3 jours)
-\textbf{le vendredi}.
+Le simplexe fournit les quantités, mais la date de commande dépend du délai de livraison, qui
+est une donnée de départ. Pour que la marchandise soit disponible le lundi matin, on compte à
+rebours : A, dont le délai est de 2 jours, se commande le samedi précédent, et B, dont le délai
+est de 3 jours, le vendredi. Cette étape ne demande pas de simplexe, car il s'agit d'un simple
+calcul de calendrier.
 
-Entre deux livraisons, un seuil d'alerte permet de réagir : si le stock descend sous le
-point de commande $s_i = d_i\,L_i + SS_i$ (la demande pendant le délai, plus le stock de
-sécurité), une commande doit déjà être en route. Ici $s_A = 20 \times 2 + 20 = 60$ et
-$s_B = 20 \times 3 + 20 = 80$.
+Il faut ensuite distinguer deux durées que l'on confond facilement : le délai de livraison,
+c'est-à-dire le temps que met le fournisseur, et la durée du stock, c'est-à-dire le temps avant
+qu'il soit vide. Le seuil d'alerte, ou point de commande, relie les deux. Pendant l'attente de
+la livraison, en effet, les clients continuent d'acheter : pour A, 20 par jour pendant 2 jours,
+soit 40 unités. À cette demande pendant le délai s'ajoute le stock de sécurité de 20 unités,
+prévu au cas où la demande serait plus forte, ce qui donne un seuil de 60 pour A et de
+$20 \times 3 + 20 = 80$ pour B. La règle est alors simple : dès que le stock passe sous ce
+seuil, il faut commander.
+
+Dans notre modèle, toutefois, ce seuil ne peut pas empêcher la rupture, puisqu'il n'y a
+qu'une livraison par semaine et un budget limité. Il garde néanmoins un intérêt dans deux
+situations : si le magasin pouvait commander en cours de semaine, il éviterait la rupture, et
+l'application affiche déjà le seuil de chaque produit dans son tableau « Quand commander »,
+ce qui permet au gérant de repérer les produits à surveiller. Précisons que, ne connaissant
+pas le stock du jour, l'application ne déclenche pas elle-même d'alerte, et qu'un suivi du
+stock en cours de semaine constituerait une extension naturelle. Le gérant peut alors réagir
+en demandant plus de budget, en mettant en avant un produit de remplacement, ou en acceptant
+la rupture en connaissance de cause.
 
 \subsection{Rayon ou réserve ?}
+La marchandise livrée est rangée dans la réserve, mais le client ne se sert que dans le rayon.
+Or le rayon est petit : 30 litres, partagés aujourd'hui en 15 places pour A et 15 pour B, et
+rempli une seule fois le matin. Même si la réserve est pleine, on ne vend donc que 15 A et
+15 B par jour alors que 20 clients veulent chacun des deux produits, et la marge n'est que de
+$3 \times 15 + 5 \times 15 = 120\eur$ par jour : des ventes sont perdues uniquement parce que
+le rayon est mal organisé.
 
-\subsubsection*{Le problème}
-La marchandise livrée va en réserve, mais le client ne se sert que dans le rayon, rempli une
-fois par jour. Avec 15 places pour chaque produit, on ne vend que 15 unités de A et 15
-unités de B par jour, alors que la demande est de 20 : la marge est de
-$3 \times 15 + 5 \times 15 = 120\eur$ par jour, même si la réserve est pleine. Comment
-partager les 30 litres du rayon ?
-
-\subsubsection*{Le programme linéaire}
-On note $r_A$ et $r_B$ le nombre de places de chaque produit, et $n$ le nombre de
-remplissages par jour (d'abord $n = 1$) : on vend au plus $n\,r_i$ unités par jour.
+Pour le montrer, nous écrivons un second programme linéaire. On note $r_A$ et $r_B$ le nombre
+de places données à chaque produit et $n$ le nombre de remplissages par jour (d'abord
+$n = 1$), de sorte que l'on vend au plus $n\,r_i$ unités par jour :
 \begin{align*}
 \max\; Z &= 3\,n\,r_A + 5\,n\,r_B && \text{(marge vendue par jour)}\\
 \text{SC :}\quad r_A + r_B &\le 30 && \text{(volume du rayon)}\\
 n\,r_A \le 20,\quad n\,r_B &\le 20 && \text{(inutile d'exposer plus que la demande)}\\
 r_A,\; r_B &\ge 0
 \end{align*}
+Le raisonnement est le même que pour les commandes, avec pour variables d'écart $e_1$ (litres
+libres dans le rayon), $e_2$ et $e_3$ (demande de A et de B non couverte). Le dessin du
+problème (figure~\ref{fig:rayon2}) montre que le partage actuel, $(15 ; 15)$, n'est pas
+optimal.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.52\linewidth]{rayon_2_produits.pdf}
+\includegraphics[width=0.42\linewidth]{rayon_2_produits.pdf}
 \caption{Partage du rayon pour $n = 1$ : programme admissible, partage actuel et optimum}
 \label{fig:rayon2}
 \end{figure}
 
-Les sommets du programme admissible sont $(0 ; 0)$, $(20 ; 0)$, $(20 ; 10)$, $(10 ; 20)$ et
-$(0 ; 20)$, avec $Z = 0$, $60$, $110$, $\mathbf{130}$ et $100$. L'optimum est $(10 ; 20)$.
+Au premier pivot (tableau~\ref{tab:r1}), B rapporte le plus ($\Delta = 5$) et entre, mais il
+est inutile de lui donner plus de 20 places puisqu'il n'y a que 20 clients : c'est la
+contrainte de demande de B qui sort (rapport 20, pivot 1) et B reçoit 20 places. Au second
+pivot (tableau~\ref{tab:r2}), A entre ($\Delta = 3$) et reçoit les 10 places restantes, le
+rayon étant alors plein ($e_1$ sort, rapport 10, pivot 1). Tous les $\Delta_j$ du
+tableau~\ref{tab:r3} sont alors négatifs ou nuls, ce qui signifie que la solution est optimale.
 
-\subsubsection*{Le simplexe en deux pivots}
-Variables d'écart : $e_1$ (litres libres dans le rayon), $e_2$ et $e_3$ (demande de A et de B
-non couverte).
-
-{\footnotesize
-\Needspace{9\baselineskip}
-\textbf{Tableau 1} : $r_B$ entre ($\Delta = 5$), $e_3$ sort (rapport 20), le pivot est 1.
-\begin{center}
+\begin{table}[!htbp]
+\centering\footnotesize
+\caption{Rayon, tableau initial : $r_B$ entre ($\Delta = 5$), $e_3$ sort (rapport 20), le pivot est 1}\label{tab:r1}
 \begin{tabular}{@{}cc|rrrrr|r|r@{}}
 \toprule
 $c_B$ & Base & $r_A$ & $r_B$ & $e_1$ & $e_2$ & $e_3$ & $b_i$ & Rapport \\
@@ -392,10 +496,11 @@ $c_B$ & Base & $r_A$ & $r_B$ & $e_1$ & $e_2$ & $e_3$ & $b_i$ & Rapport \\
  & $\Delta_j$ & 3 & \textbf{5} & 0 & 0 & 0 & 0 & \\
 \bottomrule
 \end{tabular}
-\end{center}
-\Needspace{9\baselineskip}
-\textbf{Tableau 2} : $r_A$ entre ($\Delta = 3$), $e_1$ sort (rapport 10), le pivot est 1.
-\begin{center}
+\end{table}
+
+\begin{table}[!htbp]
+\centering\footnotesize
+\caption{Rayon, deuxième tableau : $r_A$ entre ($\Delta = 3$), $e_1$ sort (rapport 10), le pivot est 1}\label{tab:r2}
 \begin{tabular}{@{}cc|rrrrr|r|r@{}}
 \toprule
 $c_B$ & Base & $r_A$ & $r_B$ & $e_1$ & $e_2$ & $e_3$ & $b_i$ & Rapport \\
@@ -407,10 +512,11 @@ $c_B$ & Base & $r_A$ & $r_B$ & $e_1$ & $e_2$ & $e_3$ & $b_i$ & Rapport \\
  & $\Delta_j$ & \textbf{3} & 0 & 0 & 0 & $-5$ & $-100$ & \\
 \bottomrule
 \end{tabular}
-\end{center}
-\Needspace{9\baselineskip}
-\textbf{Tableau 3} : tous les $\Delta_j$ sont négatifs ou nuls, la solution est optimale.
-\begin{center}
+\end{table}
+
+\begin{table}[!htbp]
+\centering\footnotesize
+\caption{Rayon, tableau final : tous les $\Delta_j$ sont négatifs ou nuls, la solution est optimale}\label{tab:r3}
 \begin{tabular}{@{}cc|rrrrr|r@{}}
 \toprule
 $c_B$ & Base & $r_A$ & $r_B$ & $e_1$ & $e_2$ & $e_3$ & $b_i$ \\
@@ -422,151 +528,55 @@ $c_B$ & Base & $r_A$ & $r_B$ & $e_1$ & $e_2$ & $e_3$ & $b_i$ \\
  & $\Delta_j$ & 0 & 0 & $-3$ & 0 & $-2$ & $-130$ \\
 \bottomrule
 \end{tabular}
-\end{center}
-}
+\end{table}
 
-\textbf{Réponse pour $n = 1$ :} il faut donner \textbf{10 places à A et 20 places à B}. La
-marge passe de 120\eur{} à 130\eur{} par jour : le produit B, plus rentable par litre, passe
-en priorité. Le rayon est entièrement utilisé ($e_1 = 0$), et il reste $e_2 = 10$ unités de
-la demande de A que le rayon ne peut pas servir.
+Avec un remplissage par jour, il faut donc donner 10 places à A et 20 places à B, ce qui fait
+passer la marge de 120\eur{} à 130\eur{} par jour sans agrandir le rayon. Le rayon est
+entièrement utilisé ($e_1 = 0$), mais il reste $e_2 = 10$ : chaque jour, 10 clients de A
+repartent sans rien, soit 30\eur{} de marge perdue. Si, en revanche, le rayon est rempli deux
+fois, le matin et à la mi-journée, 10 places suffisent pour vendre 20 unités, les contraintes
+de demande devenant $2\,r_A \le 20$ et $2\,r_B \le 20$. Le simplexe, avec les mêmes deux
+pivots, donne alors $r_A = r_B = 10$ et $Z = 160\eur$ par jour : toute la demande est servie
+($3 \times 20 + 5 \times 20 = 160$), et il reste $e_1 = 10$ litres libres dans le rayon, de
+sorte qu'agrandir celui-ci serait inutile.
 
-\subsubsection*{Avec deux remplissages par jour}
-Si le rayon est rempli deux fois (le matin et à la mi-journée), on vend $2\,r_i$ unités par
-jour, et les contraintes de demande deviennent $2\,r_A \le 20$ et $2\,r_B \le 20$. Le
-simplexe, avec les mêmes deux pivots, donne $r_A = r_B = 10$ et $Z = 160\eur$ par jour :
-toute la demande est servie ($3 \times 20 + 5 \times 20 = 160$). Le rayon n'est plus saturé :
-il reste $e_1 = 10$ litres libres, donc l'agrandir serait inutile.
+Cette amélioration n'est pas gratuite, puisque remplir le rayon une seconde fois demande du
+temps de travail, des heures en plus ou du temps pris sur une autre tâche, et que notre modèle
+ne compte pas ce coût. Il reste cependant faible face au gain, à condition de préciser la
+base de comparaison, qui n'est pas la même dans les deux magasins : dans le petit magasin, le
+second remplissage fait passer la marge de 130\eur{} (meilleur partage du rayon avec un seul
+remplissage) à 160\eur{} par jour, soit un gain de 30\eur{} par jour, tandis que, pour le
+Super U, la marge passe de 806\eur{} (partage actuel du rayon) à 906\eur{} par jour, soit un
+gain de 100\eur{} par jour.
 
 \subsection{Synthèse du cas à deux produits}
-\begin{table}[H]
+Le tableau~\ref{tab:synthese2} rassemble les réponses obtenues pour le petit magasin, avec la
+méthode qui permet d'y parvenir.
+
+\begin{table}[!htbp]
 \centering\small
 \caption{Les trois réponses pour le magasin à deux produits}\label{tab:synthese2}
-\begin{tabular}{@{}p{4.1cm}p{9.2cm}@{}}
+\begin{tabular}{@{}p{3.4cm}p{7.2cm}p{3.2cm}@{}}
 \toprule
-Question & Réponse \\
+Question & Réponse & Méthode \\
 \midrule
-Quand y a-t-il rupture ? & Le produit A à partir du samedi, le produit B à partir du
-  mercredi (570\eur{} de marge perdue par semaine). \\
-Combien commander ? & 100 unités de A et 50 unités de B, pour une marge de 550\eur{} par
-  semaine. \\
-Quand commander ? & A le samedi, B le vendredi, pour une livraison le lundi matin. \\
-Rayon ou réserve ? & 10 places pour A et 20 places pour B : la marge passe de 120 à 130\eur{}
-  par jour. Avec deux remplissages, 160\eur{} par jour. \\
+Combien commander ? & 100 A et 50 B, pour 550\eur{} de marge par semaine & Simplexe « commandes » \\
+Quand y a-t-il rupture ? & A dès le samedi, B dès le mercredi, 570\eur{} de marge perdue & Variables d'écart $e_3$ et $e_4$ \\
+Quand commander ? & A le samedi, B le vendredi ; seuils d'alerte de 60 et 80 & Délais de livraison \\
+Rayon ou réserve ? & 10 places pour A, 20 pour B : 130\eur{} par jour au lieu de 120 ;
+  160\eur{} avec deux remplissages & Simplexe « rayon » \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 % ------------------------------------------------------------------ 3
-\newpage
-\section{L'application Python : un nombre quelconque de produits}
+\section{Le cas d'un Super U : six produits et une application Python}
 
-\subsection{Pourquoi une application}
-La méthode de la partie 2 s'applique telle quelle à n'importe quel magasin, mais le calcul à
-la main devient impossible. Pour $n$ produits, le tableau du simplexe « commandes » compte
-$n + 2$ lignes et $2n + 3$ colonnes : 4 lignes et 7 colonnes pour deux produits, 8 lignes et
-15 colonnes pour six, 102 lignes et 203 colonnes pour cent, 1\,002 lignes et 2\,003 colonnes
-pour mille. Les étapes sont les mêmes ; seule la taille change, et c'est précisément ce
-qu'un programme sait faire.
+\subsection{Les données du Super U}
+Un Super U de taille moyenne vend six produits, dont les chiffres sont des hypothèses
+imaginaires mais d'ordres de grandeur plausibles ; le tableau~\ref{tab:donnees6} les présente.
 
-\subsection{Comment elle fonctionne}
-L'application reprend, étape par étape, la démarche de la partie 2.
-
-\begin{enumerate}
-\item \textbf{Lecture des produits.} Les données sont dans un fichier CSV (une ligne par
-  produit) ou dans \texttt{donnees.py}. Colonnes : produit, demande par jour, coût d'achat,
-  prix de vente, délai, stock de sécurité, places en rayon, volume.
-\item \textbf{Programme « commandes ».} L'application écrit le programme linéaire, le met
-  sous forme canonique et le résout par l'algorithme du simplexe.
-\item \textbf{Ruptures.} Elle lit les variables d'écart des plafonds et calcule les jours
-  couverts $x_i^{*} / d_i$.
-\item \textbf{Calendrier.} Elle déduit le jour de commande de chaque délai.
-\item \textbf{Programme « rayon ».} Elle écrit et résout le second programme linéaire.
-\end{enumerate}
-
-\textbf{Le modèle pour $n$ produits.} Les deux programmes sont ceux de la partie 2, avec
-deux ajouts. D'abord un service minimum $s$ : on commande au moins $s \times H_i$ de chaque
-produit (70\,\% dans le cas à six produits, 0 dans l'exemple à la main). Ensuite $n$ produits
-au lieu de deux.
-\begin{align*}
-\text{Commandes :}\quad & \max \sum_i m_i\,x_i
-  \quad\text{SC :}\quad \sum_i c_i\,x_i \le B,\;\; \sum_i v_i\,x_i \le V,\;\;
-  s\,H_i \le x_i \le H_i\\
-\text{Rayon :}\quad & \max \sum_i m_i\,n\,r_i
-  \quad\text{SC :}\quad \sum_i v_i\,r_i \le S,\;\; n\,r_i \le d_i
-\end{align*}
-où $B$ est le budget, $V$ la réserve, $S$ le volume du rayon et $n$ le nombre de
-remplissages par jour. Pour que le simplexe s'applique directement, on pose
-$x_i = s\,H_i + z_i$ avec $z_i \ge 0$ : la quantité $z_i$ est ce que l'on commande
-\textit{au-delà} du minimum, et toutes les contraintes deviennent des « $\le$ » à second
-membre positif (programme linéaire canonique du cours).
-
-\textbf{Les fichiers.}
-\begin{center}\small
-\begin{tabular}{@{}p{5.2cm}p{9cm}@{}}
-\toprule
-Fichier & Rôle \\
-\midrule
-\texttt{simplexe.py} & l'algorithme du simplexe en tableaux (le même qu'à la main) \\
-\texttt{modele.py} & les deux programmes linéaires, les ruptures, le calendrier \\
-\texttt{application.py} & lit les produits, répond aux trois questions, affiche \\
-\texttt{app\_streamlit.py} & la même application dans le navigateur (interface Streamlit) \\
-\texttt{donnees.py} & les produits et les paramètres du cas d'étude \\
-\texttt{exemple\_*\_produits.csv} & des fichiers de produits (2 et 6 produits) \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\textbf{Utilisation.} Quatre commandes suffisent :
-\begin{lstlisting}[language=bash]
-python application.py --deux-produits          # l'exemple resolu a la main
-python application.py                          # les 6 produits du Super U
-python application.py --fichier mes_produits.csv
-python application.py --aleatoire 100          # 100 produits generes au hasard
-\end{lstlisting}
-Le budget, la réserve, le service minimum, le volume du rayon et le nombre de remplissages
-se changent par des options (\texttt{--budget 9000}, \texttt{--remplissages 2}, etc.). Pour
-un petit magasin, l'application affiche tous les tableaux du simplexe ; pour un grand, elle
-n'affiche que les résultats principaux.
-
-\textbf{Interface web.} Le fichier \texttt{app\_streamlit.py} propose la même application
-dans le navigateur. Elle est en ligne à l'adresse
-\href{https://projet-ro-stocks.streamlit.app/}{\texttt{https://projet-ro-stocks.streamlit.app/}} ; pour la lancer sur son propre ordinateur, il
-suffit de taper \texttt{python -m streamlit run app\_streamlit.py}. On y choisit le cas
-(2 produits, 6 produits, un fichier CSV ou des produits aléatoires), on modifie directement
-le tableau des produits, on règle le budget, la réserve, le service minimum et le nombre de
-remplissages du rayon avec le menu de gauche, et le calcul se refait aussitôt. Les réponses
-aux trois questions sont dans des onglets, et un onglet « Simplexe pas à pas » affiche les
-tableaux pour les petits magasins (figure~\ref{fig:streamlit}).
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.74\linewidth]{app_streamlit.png}
-\caption{L'application Streamlit sur les six produits, onglet « Rayon ou réserve »}
-\label{fig:streamlit}
-\end{figure}
-
-\subsection{Vérification sur le cas à deux produits}
-Avant de lui faire confiance, on vérifie que l'application retrouve les calculs de la
-partie 2. La commande \texttt{python application.py --deux-produits} affiche exactement :
-\begin{itemize}
-\item les trois tableaux du simplexe « commandes », avec les mêmes pivots (4 puis 0,5) ;
-\item la solution $a = 100$, $b = 50$, $Z = 550\eur$, et les écarts 40 et 90 ;
-\item les jours couverts 5 et 2,5, donc les ruptures le samedi et le mercredi, et 570\eur{}
-  de marge perdue ;
-\item le calendrier : samedi pour A, vendredi pour B ;
-\item le partage du rayon : 10 et 20 places, $Z = 130\eur$ (160\eur{} avec deux
-  remplissages).
-\end{itemize}
-Ces contrôles sont automatisés dans \texttt{test\_modele.py} (huit tests, tous réussis). À
-titre de contrôle supplémentaire, 30 magasins tirés au hasard (de 2 à 300 produits, soit
-60 programmes linéaires) ont aussi été résolus avec le solveur SciPy (Virtanen et al.,
-2020) : l'écart avec notre simplexe est de l'ordre de $10^{-9}$. Le solveur n'est utilisé
-que pour ce contrôle, pas dans l'application.
-
-\subsection{Application aux six produits d'un Super U}
-
-\subsubsection*{Les données}
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering\small
 \caption{Données des six produits (hypothèses)}\label{tab:donnees6}
 \begin{tabular}{@{}llrrrrrrr@{}}
@@ -588,20 +598,155 @@ $m_i$ : marge unitaire (€) ; $v_i$ : volume (litres) ;\\ $R_i$ : places actuel
 $L_i$ : délai de livraison (jours).
 \end{table}
 
-Paramètres : budget de 8\,000\eur{} par semaine, réserve de 25\,000 litres (25 m\textsuperscript{3}),
-service minimum de 70\,\%, rayon de 3\,300 litres (le volume des places actuelles), livraison
-le lundi matin, un remplissage du rayon par jour. Servir toute la demande coûterait
-9\,310\eur{} et occuperait 27\,388 litres : comme dans le cas à deux produits, le magasin ne
-peut pas tout commander.
+Le magasin dispose d'un budget de 8\,000\eur{} par semaine, d'une réserve de 25\,000 litres
+(25 m\textsuperscript{3}) et d'un rayon de 3\,300 litres, qui est le volume occupé par les
+places actuelles ; la livraison a lieu le lundi matin et le rayon est rempli une fois par
+jour. Servir toute la demande coûterait 9\,310\eur{} et occuperait 27\,388 litres : comme dans
+le petit magasin, il faut donc choisir.
 
-\subsubsection{Combien commander ?}
-Le service minimum de 70\,\% fait partie du modèle : le minimum coûte 6\,517\eur, occupe
-19\,171,25 litres et rapporte déjà 4\,439,40\eur{} de marge. Il reste 1\,483\eur{} de budget
-et 5\,828,75 litres à répartir. On note $e_1$ le budget non dépensé, $e_2$ les litres libres
-en réserve, et $e_3$ à $e_8$ la demande non servie des produits 1 à 6. Le simplexe
-s'arrête après huit pivots :
+\subsection{Une règle en plus : le service minimum}
+Le test de sensibilité de la partie 2 a montré qu'un produit peu rentable est toujours servi
+en dernier, le simplexe privilégiant les produits qui rapportent le plus par unité de la
+ressource qui bloque, c'est-à-dire, pour le Super U où seul le budget limite le magasin, la
+marge par euro dépensé. Un tel produit peut même disparaître complètement des commandes. Or un
+supermarché sans lait ou sans eau est inimaginable, puisqu'il s'agit de produits de première
+nécessité : le client qui ne les trouve pas peut aller faire toutes ses courses ailleurs, et
+le magasin perd alors bien plus que leur seule marge.
 
-\begin{table}[H]
+Nous imposons donc de commander au moins 70\,\% de la demande de chaque produit. Cette règle
+traduit l'idée d'assortiment obligatoire utilisée par les enseignes, c'est-à-dire une liste de
+produits toujours présents en rayon, et le taux de 70\,\% est un choix de notre part : en
+pratique, chaque enseigne fixerait son propre objectif, sans doute plus élevé pour les produits
+essentiels. Précisons que le service minimum n'empêche pas les ruptures, il les limite : sans
+lui, le lait pourrait être absent toute la semaine, alors qu'avec lui il est présent près de
+cinq jours sur sept (4,9 jours couverts).
+
+Reste à intégrer cette règle au simplexe sans en changer la forme. Pour cela, nous coupons la
+commande de chaque produit en deux morceaux : le minimum obligatoire, fixé d'avance par une
+simple multiplication, et un supplément $z_i$, décidé par le simplexe, ce que l'on écrit
+$x_i = 0{,}7\,H_i + z_i$ avec $z_i \ge 0$. Pour un produit dont la demande de la semaine est
+de 20, par exemple, le minimum vaut 14 et le simplexe choisit un supplément compris entre 0 et
+6. Le simplexe ne se pose donc jamais la question « 70\,\% ou 100\,\% » : il répartit
+seulement l'argent qui reste, et toutes les contraintes gardent la forme « inférieur ou égal »
+du cours. Le cas à deux produits correspond simplement à un minimum de 0\,\%.
+
+\subsection{Trop grand pour la main : pourquoi une application}
+Le Super U pose exactement le même problème que le petit magasin, mais il est trop grand pour
+être résolu à la main. Pour $n$ produits, en effet, le tableau du simplexe « commandes » compte
+$n + 2$ lignes et $2n + 3$ colonnes : 4 lignes et 7 colonnes pour deux produits, 8 lignes et
+15 colonnes pour six, 102 lignes et 203 colonnes pour cent, 1\,002 lignes et 2\,003 colonnes
+pour mille. Les étapes restent exactement les mêmes et seule la taille change, ce qu'un
+programme sait précisément faire. Nous avons donc programmé nous-mêmes l'algorithme du
+simplexe en Python, tel qu'il est vu en cours, plutôt que d'utiliser un solveur tout fait,
+ce choix permettant d'afficher et d'expliquer chaque tableau.
+
+\subsection{Comment fonctionne l'application}
+L'application reprend, étape par étape, la démarche de la partie 2. Elle lit d'abord les
+produits, soit dans un fichier CSV (une ligne par produit, avec la demande par jour, le coût
+d'achat, le prix de vente, le délai, le stock de sécurité, les places en rayon et le volume),
+soit dans le fichier de données du projet. Elle écrit ensuite le programme linéaire
+« commandes », le met sous forme canonique et le résout par l'algorithme du simplexe, puis
+elle lit dans le tableau final les variables d'écart des plafonds et calcule les jours
+couverts $x_i^{*} / d_i$ pour répondre à la question des ruptures. Elle déduit enfin de chaque
+délai le jour de commande, avant d'écrire et de résoudre le second programme linéaire, celui
+du rayon.
+
+Les deux programmes sont ceux de la partie 2, avec deux généralisations : un service minimum
+$s$, de 70\,\% pour le Super U et de 0 pour l'exemple à la main, et $n$ produits au lieu de
+deux. Avec $x_i$ la quantité commandée du produit $i$, $H_i$ sa demande de la semaine, $B$ le
+budget, $V$ la réserve, $S$ le volume du rayon, $r_i$ le nombre de places du produit $i$ en
+rayon et $n$ le nombre de remplissages par jour, ils s'écrivent :
+\begin{align*}
+\text{Commandes :}\quad & \max \sum_i m_i\,x_i
+  \quad\text{SC :}\quad \sum_i c_i\,x_i \le B,\;\; \sum_i v_i\,x_i \le V,\;\;
+  s\,H_i \le x_i \le H_i\\
+\text{Rayon :}\quad & \max \sum_i m_i\,n\,r_i
+  \quad\text{SC :}\quad \sum_i v_i\,r_i \le S,\;\; n\,r_i \le d_i
+\end{align*}
+Pour que le simplexe s'applique directement, on pose $x_i = s\,H_i + z_i$ avec $z_i \ge 0$ : la
+quantité $z_i$ est ce que l'on commande au-delà du minimum, et toutes les contraintes
+deviennent des « inférieur ou égal » à second membre positif, c'est-à-dire le programme
+linéaire canonique du cours. Le tableau~\ref{tab:fichiers} présente les fichiers du projet.
+
+\begin{table}[!htbp]
+\centering\small
+\caption{Les fichiers de l'application}\label{tab:fichiers}
+\begin{tabular}{@{}p{5.2cm}p{9cm}@{}}
+\toprule
+Fichier & Rôle \\
+\midrule
+\texttt{simplexe.py} & l'algorithme du simplexe en tableaux (le même qu'à la main) \\
+\texttt{modele.py} & les deux programmes linéaires, les ruptures, le calendrier \\
+\texttt{application.py} & lit les produits, répond aux trois questions, affiche \\
+\texttt{app\_streamlit.py} & la même application dans le navigateur (interface Streamlit) \\
+\texttt{donnees.py} & les produits et les paramètres du cas d'étude \\
+\texttt{exemple\_*\_produits.csv} & des fichiers de produits (2 et 6 produits) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Quatre commandes suffisent pour l'utiliser :
+\begin{lstlisting}[language=bash]
+python application.py --deux-produits          # l'exemple resolu a la main
+python application.py                          # les 6 produits du Super U
+python application.py --fichier mes_produits.csv
+python application.py --aleatoire 100          # 100 produits generes au hasard
+\end{lstlisting}
+Le budget, la réserve, le service minimum, le volume du rayon et le nombre de remplissages se
+changent par des options (\texttt{--budget 9000}, \texttt{--remplissages 2}, etc.), et
+l'application affiche tous les tableaux du simplexe pour un petit magasin, mais seulement les
+résultats principaux pour un grand.
+
+Le fichier \texttt{app\_streamlit.py} propose la même application dans le navigateur. Elle est
+en ligne à l'adresse \href{https://projet-ro-stocks.streamlit.app/}{\texttt{https://projet-ro-stocks.streamlit.app/}}
+et se lance sur un ordinateur par la commande \texttt{python -m streamlit run app\_streamlit.py}.
+On y choisit le cas (2 produits, 6 produits, un fichier CSV ou des produits aléatoires), on
+modifie directement le tableau des produits, on règle le budget, la réserve, le service
+minimum et le nombre de remplissages du rayon avec le menu de gauche, et le calcul se refait
+aussitôt. Les réponses aux trois questions sont réparties dans des onglets, un onglet « Simplexe
+pas à pas » affichant les tableaux pour les petits magasins (figure~\ref{fig:streamlit}). Dans le
+mode « produits générés au hasard », le budget et la réserve se recalculent automatiquement avec
+la taille du magasin, selon les proportions utilisées pour le passage à l'échelle (section
+\ref{sec:echelle}), afin que le programme ait toujours une solution.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.62\linewidth]{app_streamlit.png}
+\caption{L'application Streamlit sur les six produits, onglet « Rayon ou réserve »}
+\label{fig:streamlit}
+\end{figure}
+
+\subsection{Vérification sur le cas à deux produits}
+Avant de lui faire confiance, nous avons vérifié que l'application retrouve exactement les
+résultats de la partie 2. La commande \texttt{python application.py --deux-produits} affiche
+en effet les trois mêmes tableaux du simplexe « commandes », avec les mêmes pivots (4 puis
+0,5), la solution $a = 100$, $b = 50$ et $Z = 550\eur$, ainsi que les écarts de 40 et de 90.
+Elle donne aussi les jours couverts, 5 et 2,5, donc les ruptures le samedi et le mercredi pour
+570\eur{} de marge perdue, le calendrier de commande (samedi pour A, vendredi pour B) et le
+partage du rayon, soit 10 et 20 places pour $Z = 130\eur$, ou 160\eur{} avec deux remplissages.
+Ces contrôles sont automatisés dans \texttt{test\_modele.py}, dont les huit tests sont tous
+réussis. À titre de contrôle supplémentaire, nous avons comparé nos résultats à ceux du solveur
+SciPy (Virtanen et al., 2020) sur 30 magasins tirés au hasard, de 2 à 300 produits, soit 60
+programmes linéaires : l'écart est de l'ordre de $10^{-9}$. Ce solveur ne sert qu'à ce
+contrôle et n'est pas utilisé dans l'application.
+
+\subsection{Combien commander ?}
+Nous appliquons à présent aux six produits le programme « commandes ». Le service minimum de
+70\,\% en fait partie : le minimum obligatoire coûte déjà 6\,517\eur, occupe 19\,171,25 litres
+et rapporte 4\,439,40\eur{} de marge, de sorte qu'il reste 1\,483\eur{} de budget et
+5\,828,75 litres de réserve à répartir. Nous notons $e_1$ le budget non dépensé, $e_2$ les
+litres libres en réserve et $e_3$ à $e_8$ la demande non servie des produits 1 à 6. Le simplexe
+s'arrête après huit pivots (tableau~\ref{tab:pivots}), que l'on peut lire comme une histoire.
+Les quatre premiers servent d'abord les produits qui rapportent le plus par unité (les
+cosmétiques, la lessive, l'eau, puis les yaourts) jusqu'à épuiser le budget. Le cinquième
+corrige ce choix : le pain de mie rapporte moins par unité que les yaourts (0,55\eur{} contre
+0,65\eur), mais il coûte beaucoup moins cher, si bien qu'il rapporte 1,22\eur{} par euro
+dépensé contre 0,59\eur{} pour les yaourts, et, comme c'est le budget qui manque, le simplexe
+remplace les yaourts par du pain. Les pivots 6 à 8 réduisent enfin légèrement l'eau, qui coûte
+cher et occupe beaucoup de place, au profit du pain, et, comme dans la partie 2, la marge
+augmente à chaque pivot.
+
+\begin{table}[!htbp]
 \centering\small
 \caption{Les huit pivots successifs}\label{tab:pivots}
 \begin{tabular}{@{}clrlrrrl@{}}
@@ -620,13 +765,11 @@ s'arrête après huit pivots :
 \end{tabular}
 \end{table}
 
-Les quatre premiers pivots servent les produits dans l'ordre de leur marge unitaire, jusqu'à
-épuiser le budget. L'étape 5 corrige ce choix : le pain rapporte moins par unité que les
-yaourts (0,55 contre 0,65), mais il coûte beaucoup moins cher, donc il rapporte plus par
-euro de budget. Les étapes 6 à 8 réduisent l'eau, qui consomme beaucoup de budget et de
-réserve, au profit du pain. Comme dans la partie 2, la marge augmente à chaque pivot.
+En revenant aux variables d'origine ($x_i = 0{,}7\,H_i + z_i$), nous obtenons les commandes du
+tableau~\ref{tab:solution}, que la figure~\ref{fig:solution} met en regard de la demande de
+chaque produit.
 
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering\small
 \caption{Solution optimale du programme « commandes »}\label{tab:solution}
 \begin{tabular}{@{}lrrrrl@{}}
@@ -643,23 +786,29 @@ Cosmétiques          & 122,5  & 52,5   & 175       & 175    & plafond saturé \
 \end{tabular}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.74\linewidth]{solution_optimale.pdf}
+\includegraphics[width=0.62\linewidth]{solution_optimale.pdf}
 \caption{Part de la demande hebdomadaire commandée à l'optimum
 (bleu : plafond ; vert : entre les bornes ; orange : service minimum)}
 \label{fig:solution}
 \end{figure}
 
-La marge optimale est $4\,439{,}40 + 1\,191{,}15 = \mathbf{5\,630{,}55}$\eur{} par semaine.
-Le budget est saturé ($e_1 = 0$) ; la réserve ne l'est pas ($e_2 = 185{,}83$ litres libres).
-Le simplexe a retrouvé de lui-même le bon critère : la marge par euro dépensé
-$m_i / c_i$ (pain 1,22 ; cosmétiques 0,88 ; lessive 0,62 ; eau 0,60 ; yaourts 0,59 ; lait
-0,44). Les trois premiers sont servis entièrement, l'eau reçoit le budget restant, les deux
-derniers restent au minimum.
+La marge optimale est de $4\,439{,}40 + 1\,191{,}15 = 5\,630{,}55\eur$ par semaine. Le budget
+est entièrement dépensé ($e_1 = 0$), mais la réserve ne l'est pas, puisqu'il reste 185,83
+litres libres. Un écart non nul ne signifie pas un échec du calcul : il indique seulement que
+cette ressource n'est pas celle qui bloque, et c'est ici le budget qui limite le magasin, non
+la place. Le simplexe a d'ailleurs retrouvé de lui-même le bon critère, la marge par euro
+dépensé (pain 1,22 ; cosmétiques 0,88 ; lessive 0,62 ; eau 0,60 ; yaourts 0,59 ; lait 0,44) :
+les produits les mieux classés sont servis entièrement, l'eau reçoit le reste du budget, et le
+lait et les yaourts restent au minimum, protégés par la règle des 70\,\%.
 
-\subsubsection{Quand y a-t-il rupture ?}
-\begin{table}[H]
+\subsection{Quand y a-t-il rupture ?}
+La lecture est la même que dans le petit magasin : on divise la quantité commandée par la
+demande quotidienne pour obtenir le nombre de jours couverts, ce que montre le
+tableau~\ref{tab:ruptures}.
+
+\begin{table}[!htbp]
 \centering\small
 \caption{Ruptures prévues par le programme (livraison le lundi matin)}\label{tab:ruptures}
 \begin{tabular}{@{}lrrrlr@{}}
@@ -678,23 +827,26 @@ Total                &           &        &     &                   & 711,45\eur
 \end{tabular}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.72\linewidth]{ruptures.pdf}
+\includegraphics[width=0.62\linewidth]{ruptures.pdf}
 \caption{Nombre de jours de vente couverts par la commande optimale (rouge : rupture avant
 la fin de la semaine)}
 \label{fig:ruptures}
 \end{figure}
 
-Comme dans le cas à deux produits, les ruptures se lisent dans les variables d'écart : le
-lait et les yaourts manquent à partir du vendredi soir et tout le week-end, l'eau le
-dimanche. Ce sont des ruptures que le magasin \textit{choisit}, parce que ce sont celles qui
-coûtent le moins de marge par euro économisé. La marge perdue, 711,45\eur{} par semaine,
-est l'écart entre la marge si tout était servi (6\,342\eur) et la marge optimale
-(5\,630,55\eur).
+Le lait et les yaourts manquent ainsi à partir du vendredi soir et tout le week-end, et l'eau
+le dimanche. Comme dans le cas à deux produits, ce sont des ruptures choisies, celles qui
+coûtent le moins de marge pour chaque euro économisé : la marge perdue, 711,45\eur, est
+l'écart entre la marge si tout était servi (6\,342\eur) et la marge optimale (5\,630,55\eur).
 
-\subsubsection{Quand commander ?}
-\begin{table}[H]
+\subsection{Quand commander ?}
+On compte à rebours depuis la livraison du lundi matin, avec le délai de chaque fournisseur, et
+le point de commande se calcule comme dans la partie 2, en ajoutant à la demande pendant le
+délai le stock de sécurité. Les cosmétiques, dont le délai est de sept jours, se commandent
+ainsi le lundi de la semaine précédente, comme le montre le tableau~\ref{tab:calendrier}.
+
+\begin{table}[!htbp]
 \centering\small
 \caption{Calendrier de commande pour une livraison le lundi matin}\label{tab:calendrier}
 \begin{tabular}{@{}lrlrr@{}}
@@ -711,13 +863,13 @@ Cosmétiques          & 7 jours & lundi précédent   & 50  & 225 \\
 \end{tabular}
 \end{table}
 
-\subsubsection{Rayon ou réserve ?}
-Le rayon actuel est mal partagé : 100 places pour 25 ventes par jour de cosmétiques, mais
-seulement 300 places pour 400 ventes de pain de mie et 150 pour 200 d'eau. Le programme
-« rayon » partage les 3\,300 litres entre les six produits ; son simplexe s'arrête après
-sept pivots.
+\subsection{Rayon ou réserve ?}
+Le rayon actuel est mal partagé : les cosmétiques (gel douche) y occupent 100 places pour
+seulement 25 ventes par jour, alors que le pain de mie n'a que 300 places pour 400 ventes et
+l'eau 150 places pour 200 ventes. Le programme « rayon » partage les 3\,300 litres entre les six
+produits, et son simplexe s'arrête après sept pivots (tableau~\ref{tab:pivotsrayon}).
 
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering\small
 \caption{Les sept pivots du programme « rayon » ($n = 1$)}\label{tab:pivotsrayon}
 \begin{tabular}{@{}clrlrrrl@{}}
@@ -735,7 +887,7 @@ sept pivots.
 \end{tabular}
 \end{table}
 
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering\small
 \caption{Partage actuel et partage optimal du rayon ($n = 1$)}\label{tab:rayon}
 \begin{tabular}{@{}lrrrrr@{}}
@@ -756,31 +908,30 @@ Total                &     &     &        & 806,00\eur & 850,88\eur \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.74\linewidth]{rayon.pdf}
+\includegraphics[width=0.62\linewidth]{rayon.pdf}
 \caption{Places en rayon : partage actuel, partage optimal et demande d'une journée}
 \label{fig:rayon}
 \end{figure}
 
-Le simplexe reprend la place gaspillée (cosmétiques, lessive, yaourts) et la donne au pain de
-mie, qui passe de 300 à 400 places. Le gain est de $850{,}88 - 806{,}00 = 44{,}88\eur$ par
-jour, soit environ 16\,400\eur{} par an, sans agrandir le rayon. Le seul produit encore en
-rupture en rayon est l'eau (138,75 places pour 200 ventes), parce que c'est celui qui
-rapporte le moins par litre de rayon ($0{,}90 / 10 = 0{,}09\eur$).
-
-Avec deux remplissages par jour (\texttt{--remplissages 2}), il suffit de $d_i / 2$ places
-par produit, soit 1\,956 litres. Le simplexe donne 906\eur{} par jour : toute la demande est
-servie, le rayon n'est plus saturé, et l'agrandir serait inutile. Le gain est de
+Le simplexe reprend les places inutiles (cosmétiques, lessive, yaourts) et les donne au pain de
+mie, qui passe de 300 à 400 places, pour un gain de $850{,}88 - 806{,}00 = 44{,}88\eur$ par
+jour, soit environ 16\,400\eur{} par an, sans agrandir le rayon. Seule l'eau reste un peu en
+rupture en rayon (138,75 places pour 200 ventes), car c'est le produit qui rapporte le moins par
+litre occupé ($0{,}90 / 10 = 0{,}09\eur$). Avec deux remplissages par jour (option
+\texttt{--remplissages 2}), il suffit en outre de $d_i / 2$ places par produit, soit 1\,956
+litres, et le simplexe donne 906\eur{} par jour : toute la demande est servie, le rayon n'est
+plus saturé et l'agrandir serait inutile. Par rapport au partage actuel, le gain est de
 $906 - 806 = 100\eur$ par jour.
 
-\subsection{Passage à l'échelle}
-L'application est testée sur des magasins de 10 à 1\,000 produits, générés au hasard
-(\texttt{--aleatoire}). Le budget y est fixé à 85\,\% du coût de la demande et la réserve à
-90\,\% de son volume, comme dans le cas à six produits où le budget est inférieur à ce qu'il
-faudrait pour tout servir.
+\subsection{Passage à l'échelle}\label{sec:echelle}
+Nous avons testé l'application sur des magasins de 10 à 1\,000 produits générés au hasard
+(option \texttt{--aleatoire}), avec un budget fixé à 85\,\% du coût de la demande et une
+réserve à 90\,\% de son volume, comme dans le cas à six produits où le budget est inférieur à
+ce qu'il faudrait pour tout servir. Le tableau~\ref{tab:echelle} en donne les résultats.
 
-\begin{table}[H]
+\begin{table}[!htbp]
 \centering
 \caption{L'application sur des magasins de plus en plus grands}\label{tab:echelle}
 \small\setlength{\tabcolsep}{4pt}
@@ -797,66 +948,133 @@ Produits & Tableau & Pivots & Temps & Marge par semaine & En rupture & Gain du r
 \end{tabular}
 \end{table}
 
-« Tableau » est la taille du tableau du simplexe « commandes », et « Pivots » le nombre total
-des deux programmes. Les temps sont ceux d'un ordinateur ordinaire. Le nombre de pivots reste de l'ordre de
-1,5 à 2 fois le nombre de produits : l'algorithme ne parcourt qu'une toute petite partie
-des sommets du programme admissible, ce qui le rend utilisable sur de grands magasins.
-Les résultats se lisent comme dans le cas à deux produits ; seul le nombre de lignes change.
-Comme les données sont tirées au hasard, ces chiffres montrent que l'application tient la
-charge, pas ce qui se passerait dans un magasin réel.
+« Tableau » désigne la taille du tableau du simplexe « commandes », et « Pivots » le nombre
+total des deux programmes. Le nombre de pivots reste de l'ordre de 1,5 à 2 fois le nombre de
+produits : l'algorithme ne visite qu'une toute petite partie des sommets possibles, ce qui le
+rend utilisable pour un grand magasin, et les temps indiqués sont ceux d'un ordinateur
+ordinaire. Comme les données sont tirées au hasard, ces chiffres montrent que l'application
+tient la charge, non ce qui se passerait dans un magasin réel.
 
 % ------------------------------------------------------------------ 4
-\section{Discussion : limites}
+\section{Les limites du modèle et les pistes pour les dépasser}
+Aucun modèle n'est parfait. Plutôt que de laisser ces limites sous-entendues, nous les
+énumérons clairement, avec pour chacune la manière dont on pourrait aller plus loin.
 
-\textbf{Des données imaginaires.} Les conclusions chiffrées valent pour ces hypothèses. La
-méthode, elle, s'applique à des données réelles : il suffit de remplacer le fichier des
-produits.
+\paragraph{Limite 1 : les deux programmes ne communiquent pas.} C'est la limite la plus
+importante. Le premier programme décide ce qui entre dans la réserve, en tenant compte de sa
+capacité de 150 litres. Le second partage le rayon en supposant que la réserve a toujours de
+quoi le remplir, comme si elle était illimitée. Or ce n'est pas vrai : dans le petit magasin,
+il n'y a que 50 B pour la semaine. Le programme « rayon » prévoit 20 B par jour, mais la
+réserve est vide dès le mercredi, et il n'y a plus rien à mettre en rayon. Il en va de même
+pour le lait et les yaourts du Super U le week-end. \emph{Une amélioration simple :} relier les
+deux programmes par une seule contrainte, en limitant ce que l'on met en rayon chaque jour à la
+quantité commandée divisée par 7. Pour B, on passerait de 20 à environ 7 par jour. La marge de
+la semaine resterait la même (on ne vend jamais plus que ce que l'on a commandé), mais le
+produit serait présent chaque jour au lieu de disparaître le mercredi. Le choix entre un rayon
+vide plusieurs jours et un petit manque quotidien relève alors de la stratégie du magasin ;
+pour un produit essentiel comme le lait, étaler la vente semble préférable. \emph{Une
+amélioration complète :} un modèle multi-période, qui suit chaque jour le stock en réserve, ce
+que l'on sort pour le rayon et ce que l'on vend. Il se résout toujours par le simplexe, mais ses
+tableaux sont beaucoup plus grands.
 
-\textbf{Une demande certaine.} La programmation linéaire suppose que la demande est connue.
-En réalité elle varie d'un jour à l'autre, et les livraisons peuvent être en retard. Le
-stock de sécurité sert à couvrir cet aléa, mais son niveau n'est pas optimisé par le modèle.
+\paragraph{Limite 2 : une demande supposée connue.} Nous supposons que la demande est
+exactement de 20 par jour. En réalité, elle varie d'un jour à l'autre. Le stock de sécurité sert
+à couvrir cet aléa, mais son niveau n'est pas optimisé par le modèle. \emph{Piste :} estimer la
+demande à partir de l'historique des ventes, par une méthode de prévision.
 
-\textbf{Des quantités non entières.} Le simplexe donne 1\,268,67 packs d'eau et 138,75
-places en rayon. À cette échelle, l'arrondi ne change presque rien : à 1\,268 packs, le
-budget et la réserve restent respectés et la marge baisse de moins d'un euro.
+\paragraph{Limite 3 : des délais de livraison fixes.} Nous supposons que les fournisseurs
+livrent toujours à temps. Un retard provoquerait une rupture que le modèle ne prévoit pas.
 
-\textbf{Deux programmes séparés.} Le programme « commandes » et le programme « rayon » sont
-résolus l'un après l'autre. Le second suppose que la marchandise est disponible en réserve,
-ce qui n'est pas vrai le week-end pour le lait et les yaourts. Un programme unique serait
-plus juste, mais ses tableaux seraient plus grands.
+\paragraph{Limite 4 : une seule livraison par semaine.} C'est pourquoi le seuil d'alerte ne
+peut pas empêcher la rupture dans notre modèle. Avec des livraisons possibles en cours de
+semaine, ou un budget plus élevé, ce seuil permettrait de relancer une commande avant que le
+rayon soit vide.
 
-\textbf{Un simplexe maison.} L'algorithme programmé est celui du cours : il est lisible et
-suffit jusqu'à quelques milliers de produits. Au-delà, un solveur professionnel serait plus
-rapide, mais on perdrait la possibilité d'afficher et d'expliquer chaque tableau.
+\paragraph{Limite 5 : un seul critère, la marge.} Le simplexe favorise toujours les produits
+qui rapportent le plus par unité de la ressource qui bloque. Il ne voit pas le coût d'image :
+un client qui ne trouve pas de lait le samedi peut aller faire toutes ses courses ailleurs. Le
+service minimum de 70\,\% corrige ce défaut de façon approximative, et le taux de 70\,\% est un
+choix de notre part, qui pourrait être ajusté produit par produit.
 
-\textbf{Un seul critère.} Le modèle maximise la marge. Un client qui ne trouve pas de lait
-le samedi peut aller faire toutes ses courses ailleurs : ce coût d'image n'est pas compté.
-Le service minimum de 70\,\% en tient compte de façon approximative.
+\paragraph{Limite 6 : le coût du second remplissage n'est pas compté.} Remplir le rayon deux
+fois par jour demande du temps de travail. Ce coût reste faible face au gain (30\eur{} par jour
+dans le petit magasin, par rapport au meilleur partage à un remplissage, et 100\eur{} pour le
+Super U, par rapport au partage actuel), mais il devrait être intégré dans un modèle complet.
+
+\paragraph{Limite 7 : des quantités non entières.} Le simplexe donne par exemple 1\,268,67
+packs d'eau. À cette échelle, l'arrondi à 1\,268 respecte toutes les contraintes et fait
+perdre moins d'un euro.
+
+\paragraph{Limite 8 : des données imaginaires.} Les chiffres du Super U sont des hypothèses.
+Les résultats chiffrés ne valent que pour elles, mais la méthode, elle, s'applique à des
+données réelles : il suffit de charger un autre fichier dans l'application.
+
+\paragraph{Limite 9 : un simplexe programmé par nous-mêmes.} Il est lisible et suffit jusqu'à
+quelques milliers de produits. Au-delà, un solveur professionnel serait plus rapide, mais l'on
+perdrait la possibilité d'afficher et d'expliquer chaque tableau.
+
+\paragraph{Limite 10 : un service minimum fixé produit par produit.} Dans un grand magasin,
+beaucoup de produits se remplacent entre eux : un client qui ne trouve pas une marque de yaourt
+en prend souvent une autre. Imposer 70\,\% à chaque produit est alors trop strict. À l'inverse,
+sans aucun minimum, le simplexe pourrait vider des rayons entiers, car des produits de natures
+différentes ne se remplacent pas (le lait ne remplace pas la lessive). \emph{Piste :} coder dans
+l'application un service minimum par catégorie de produits (par exemple, au moins 70\,\% de la
+demande de lait, toutes marques confondues) plutôt que par produit. Les produits générés au
+hasard pour les tests n'ayant pas de catégorie, cette amélioration reste à réaliser sur des
+données réelles.
 
 % ------------------------------------------------------------------ 5
 \section{Conclusion}
-Ce dossier répond aux trois questions en deux temps : à la main sur un magasin de deux
-produits, puis avec une application sur un nombre quelconque de produits.
+Ce dossier répond aux trois questions de départ, d'abord à la main sur deux produits, puis avec
+une application sur un nombre quelconque de produits. Pour savoir combien commander, le
+simplexe donne les quantités qui maximisent la marge sous les contraintes de budget, de réserve
+et de demande : 100 A et 50 B (550\eur{} par semaine) dans le petit magasin, et une marge de
+5\,630,55\eur{} par semaine pour le Super U. La question des ruptures se résout ensuite en
+lisant directement les variables d'écart du tableau final : inévitable avec des ressources
+limitées, la rupture est en réalité choisie, puisque le simplexe retient la moins coûteuse et
+que maximiser la marge revient à minimiser la perte qu'elle entraîne. Les dates de commande
+découlent quant à elles des délais de livraison, et le seuil d'alerte indique au gérant à partir
+de quel stock une commande devrait déjà être en route. Reste enfin la répartition entre le rayon
+et la réserve, pour laquelle un second programme linéaire partage la place du rayon : il
+rapporte 130\eur{} par jour au lieu de 120 dans le petit magasin, et 44,88\eur{} par jour de plus
+pour le Super U.
 
-\textbf{Quand y a-t-il rupture ?} Quand la quantité commandée est épuisée : elle couvre
-$x_i^{*} / d_i$ jours, et la demande non servie se lit dans les variables d'écart du tableau
-final. Avec deux produits, A manque à partir du samedi et B à partir du mercredi. Avec six
-produits, le lait et les yaourts manquent à partir du vendredi soir et l'eau le dimanche.
+L'intérêt de la démarche est qu'elle se comprend entièrement sur le cas à deux produits, et que
+l'application ne fait ensuite que répéter les mêmes étapes à grande échelle. Deux
+recommandations en découlent pour le magasin, qui consistent à remplir le rayon deux fois par
+jour et à redistribuer les places du rayon en faveur des produits qui se vendent le plus. La
+prochaine étape serait de relier les deux programmes dans un modèle jour par jour, et d'estimer
+la demande à partir de données réelles.
 
-\textbf{Quand et combien commander ?} Les quantités viennent du simplexe : 100 unités de A
-et 50 de B (550\eur{} par semaine) pour deux produits, et 5\,630,55\eur{} par semaine pour
-six produits, avec un budget entièrement dépensé. Les dates viennent des délais : on
-commande de un à sept jours avant la livraison du lundi.
+\subsection{Perspective : réinvestir les bénéfices, mais dans quoi ?}
+Une question prolonge naturellement ce travail : que se passerait-il si le magasin
+réinvestissait la marge de la semaine passée dans son budget ? Dans le petit magasin, le budget
+passerait de 400\eur{} à 950\eur, soit plus que les 840\eur{} nécessaires pour tout acheter. Le
+budget ne bloquerait plus, mais la réserve, toujours limitée à 150 litres, deviendrait la
+nouvelle contrainte, et le simplexe changerait alors de choix : il favoriserait B, plus
+rentable par litre, avec 140 B et 10 A, pour une marge de 730\eur{} au lieu de 550\eur. Le
+Super U suit la même logique, puisque, avec plus de 13\,000\eur{} de budget, tout pourrait être
+acheté, mais servir toute la demande demanderait 27\,388 litres pour une réserve de 25\,000.
 
-\textbf{Comment répartir le stock entre le rayon et la réserve ?} Un second programme
-linéaire partage la place du rayon : 10 places pour A et 20 pour B (130\eur{} par jour au
-lieu de 120), et 44,88\eur{} par jour de plus pour les six produits. Avec deux
-remplissages par jour, toutes les ventes perdues en rayon disparaissent.
+La leçon est qu'au-delà d'un certain point, ajouter du budget ne sert plus à rien, car dès
+qu'une contrainte est levée, une autre prend le relais. Une stratégie à plus long terme
+consisterait à partir d'un objectif de chiffre d'affaires, à en déduire les quantités à vendre,
+puis à répartir les bénéfices entre le budget d'achat et l'agrandissement de la réserve (ou la
+location d'un local de stockage), afin de réduire les ruptures, qui sont autant de ventes
+perdues.
 
-L'intérêt de la démarche est qu'elle se comprend en entier sur le cas à deux produits, et
-que l'application ne fait ensuite rien d'autre que répéter les mêmes étapes à grande échelle.
-Deux recommandations en découlent pour le magasin : remplir le rayon deux fois par jour, et
-redistribuer les places du rayon en faveur des produits qui se vendent le plus.
+Pour décider où investir en priorité, la programmation linéaire offre déjà un outil : les prix
+duaux, ou valeurs marginales des ressources. Ils se lisent dans la ligne des $\Delta_j$ du
+tableau final, sous les variables d'écart. Dans le petit magasin, les $\Delta_j$ de $e_1$ et de
+$e_2$ valent $-1$ : un euro de budget en plus rapporterait 1\eur{} de marge (551\eur{} avec
+401\eur{} de budget), et un litre de réserve en plus rapporterait aussi 1\eur{} (551\eur{} avec
+151 litres). Il n'est pas nécessaire de connaître le coût du stockage pour s'en servir, car le
+prix dual donne le prix maximal que le magasin peut payer pour une unité supplémentaire de
+ressource : si louer un litre de stockage coûte moins de 1\eur{} par semaine, l'investissement
+est rentable, et au-delà il ne l'est pas. Ces valeurs ne restent valables que tant que la
+ressource est saturée, et il faudrait donc refaire le calcul après chaque investissement. Nous
+avons choisi de ne pas développer la dualité dans ce dossier, pour rester centrés sur le
+simplexe, mais elle constitue la suite logique de ce travail.
 
 % ------------------------------------------------------------------ biblio
 \section*{Bibliographie}

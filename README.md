@@ -67,6 +67,8 @@ python -m streamlit run app_streamlit.py
 
 Le navigateur s'ouvre sur `http://localhost:8501`. Pour arrêter : `Ctrl + C` dans le terminal.
 
+En mode « produits générés au hasard », le budget (85 % du coût de la demande) et la réserve (90 % de son volume) se recalculent automatiquement quand on change le nombre de produits, pour que le programme ait toujours une solution.
+
 ## Les fichiers
 
 | Fichier | Rôle |
@@ -78,8 +80,9 @@ Le navigateur s'ouvre sur `http://localhost:8501`. Pour arrêter : `Ctrl + C` da
 | `modele.py` | les deux programmes linéaires, les ruptures, le calendrier |
 | `donnees.py` | les produits et les paramètres (2 et 6 produits) |
 | `test_modele.py` | 8 tests, dont le cas à 2 produits résolu à la main |
+| `test_streamlit.py` | 2 tests de l'interface Streamlit en mode aléatoire (il faut Streamlit) |
 | `figures.py` | crée les graphiques du rapport (il faut matplotlib) |
-| `rapport/rapport.pdf` | le dossier rédigé (17 pages), avec sa source `rapport.tex` |
+| `rapport/rapport.pdf` | le dossier rédigé (20 pages), avec sa source `rapport.tex` |
 
 Pour lancer les tests :
 
